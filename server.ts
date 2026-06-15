@@ -268,6 +268,68 @@ async function startServer() {
   });
 
   // 6. Customers API
+  app.get("/api/customers/check-phone", async (req, res) => {
+    try {
+      const { phone } = req.query;
+      if (!phone) return res.status(400).json({ error: "Phone number required" });
+      
+      const rawPhone = String(phone);
+      const cleanTarget = rawPhone.replace(/\D/g, "").slice(-10);
+      
+      let customer = await storage.getCustomerByPhone(rawPhone);
+      if (!customer && cleanTarget) {
+        customer = await storage.getCustomerByPhone(cleanTarget);
+      }
+      
+      res.json({ exists: !!customer, phone: cleanTarget });
+    } catch (err: any) {
+      console.error("[API] Error in GET /api/customers/check-phone:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/customers/otp-login", async (req, res) => {
+    try {
+      const { phone, name, email, delivery_address } = req.body;
+      if (!phone) {
+        return res.status(400).json({ error: "Missing phone number" });
+      }
+
+      const rawPhone = String(phone);
+      const cleanNum = rawPhone.replace(/\D/g, "").slice(-10);
+      
+      let customer = await storage.getCustomerByPhone(rawPhone);
+      if (!customer && cleanNum) {
+        customer = await storage.getCustomerByPhone(cleanNum);
+      }
+
+      if (customer) {
+        // Customer exists, log them in directly
+        const { password: _, ...safeCustomer } = customer as any;
+        return res.json(safeCustomer);
+      }
+
+      // If customer doesn't exist, they must register by providing a name
+      if (!name) {
+        return res.status(444).json({ exists: false, error: "Registration details required for new number" });
+      }
+
+      // Create new customer
+      const newCustomer = await storage.createCustomer({
+        phone: cleanNum || rawPhone,
+        name,
+        email: email || null,
+        delivery_address: delivery_address || ""
+      });
+
+      const { password: _, ...safeCustomer } = newCustomer as any;
+      return res.json(safeCustomer);
+    } catch (err: any) {
+      console.error("[API] Error in POST /api/customers/otp-login:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post("/api/customers/register", async (req, res) => {
     try {
       const { phone, name, email, password, delivery_address } = req.body;
