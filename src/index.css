@@ -9,6 +9,9 @@
 }
 
 @layer base {
+  html, body {
+    overflow-x: hidden;
+  }
   body {
     background-color: #faf9f6; /* Soft warm off-white for Gujarati accent */
     color: #1f2937;
@@ -60,4 +63,19 @@
 
 .animate-float-delayed {
   animation: float-delayed 4s infinite ease-in-out 2s;
+}
+
+@keyframes playful-bounce {
+  0% { transform: translateY(0) rotate(0deg); }
+  15% { transform: translateY(0) rotate(-15deg); }
+  30% { transform: translateY(0) rotate(15deg); }
+  45% { transform: translateY(-20%) rotate(0deg); }
+  60% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-10%) rotate(0deg); }
+  90% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+.animate-playful {
+  animation: playful-bounce 3s infinite ease-in-out;
 }

@@ -221,7 +221,7 @@ export default function App() {
             }}
             className="flex items-center gap-3 cursor-pointer select-none group"
           >
-            <div className="relative flex items-center justify-center w-10 h-10 md:w-11 md:h-11 rounded-[1.25rem] bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-orange-500/30 group-hover:rotate-[15deg] group-hover:scale-105 transition-all duration-300 shrink-0 border border-white/20">
+            <div className="relative flex items-center justify-center w-10 h-10 md:w-11 md:h-11 rounded-[1.25rem] bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-orange-500/30 animate-playful shrink-0 border border-white/20">
                <div className="absolute inset-1 rounded-3xl border border-white/40 border-dashed" />
                <Sparkles className="w-5 h-5 text-white drop-shadow-sm" />
             </div>
@@ -395,40 +395,41 @@ export default function App() {
 
               {/* Advanced Filter Row */}
               <div className="flex overflow-x-auto scrollbar-none pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-nowrap lg:flex-wrap sm:justify-start lg:justify-center gap-3 text-xs snap-x">
-                <div className="flex flex-shrink-0 items-center gap-2 snap-start">
-                  <span className="font-semibold text-stone-500 hidden sm:inline">Sort by:</span>
-                  <select 
-                    value={sortBy} 
-                    onChange={e => setSortBy(e.target.value)}
-                    className="bg-white border border-stone-200 rounded-lg py-1 px-2 text-stone-700 font-medium outline-none focus:border-amber-400"
-                  >
-                    <option value="Recommended">Recommended</option>
-                    <option value="Price Low to High">Price: Low to High</option>
-                    <option value="Price High to Low">Price: High to Low</option>
-                    <option value="Rating">Top Rated</option>
-                  </select>
+                <div className="flex flex-shrink-0 items-center gap-1.5 snap-start">
+                  <span className="font-semibold text-stone-500 hidden sm:inline mr-1">Sort:</span>
+                  {(["Recommended", "Price Low to High", "Price High to Low", "Rating"]).map(type => (
+                    <button 
+                      key={type} 
+                      onClick={() => setSortBy(type)} 
+                      className={`px-2.5 py-1.5 rounded-lg border font-medium transition-colors ${sortBy === type ? 'bg-amber-100 border-amber-300 text-amber-800 shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}
+                    >
+                      {type === "Price Low to High" ? "Price: Low-High" : type === "Price High to Low" ? "Price: High-Low" : type}
+                    </button>
+                  ))}
                 </div>
                 
-                <div className="flex flex-shrink-0 items-center gap-2 border-l border-stone-200 pl-3 snap-start">
-                  <span className="font-semibold text-stone-500 hidden sm:inline">Dietary:</span>
+                <div className="flex flex-shrink-0 items-center gap-1.5 border-l border-stone-200 pl-3 snap-start relative">
                   {(["All", "Jain", "Vegan"]).map(type => (
-                    <button key={type} onClick={() => setDietary(type)} className={`px-2 py-1 rounded-lg border font-medium transition-colors ${dietary === type ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}>
-                      {type}
+                    <button 
+                      key={type} 
+                      onClick={() => setDietary(type)} 
+                      className={`px-2.5 py-1.5 rounded-lg border font-medium transition-colors ${dietary === type ? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}
+                    >
+                      {type === "All" ? "Any Diet" : type}
                     </button>
                   ))}
                 </div>
 
-                <div className="flex flex-shrink-0 items-center gap-2 border-l border-stone-200 pl-3 snap-start">
-                   <span className="font-semibold text-stone-500 hidden sm:inline">Type:</span>
-                   <select 
-                    value={collectionType} 
-                    onChange={e => setCollectionType(e.target.value)}
-                    className="bg-white border border-stone-200 rounded-lg py-1 px-2 text-stone-700 font-medium outline-none focus:border-amber-400"
-                  >
-                    <option value="All">All Types</option>
-                    <option value="Best Sellers">Best Sellers</option>
-                    <option value="New Arrivals">New Arrivals</option>
-                  </select>
+                <div className="flex flex-shrink-0 items-center gap-1.5 border-l border-stone-200 pl-3 snap-start">
+                  {(["All", "Best Sellers", "New Arrivals"]).map(type => (
+                    <button 
+                      key={type} 
+                      onClick={() => setCollectionType(type)} 
+                      className={`px-2.5 py-1.5 rounded-lg border font-medium transition-colors ${collectionType === type ? 'bg-orange-50 border-orange-300 text-orange-800 shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}
+                    >
+                      {type === "All" ? "All Types" : type}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
