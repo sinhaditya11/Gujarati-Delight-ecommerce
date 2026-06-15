@@ -127,7 +127,8 @@ export default function CustomerAuthModal({
       // 1. Check if user exists on our backend
       const checkRes = await fetch(`/api/customers/check-phone?phone=${encodeURIComponent(formattedPhone)}`);
       if (!checkRes.ok) {
-        throw new Error("Failed to contact CRM server to verify number.");
+        const errText = await checkRes.text().catch(() => "Unknown error");
+        throw new Error(`Failed to contact CRM server to verify number. Status: ${checkRes.status}, Details: ${errText.slice(0, 150)}`);
       }
       const checkData = await checkRes.json();
 
@@ -223,11 +224,19 @@ export default function CustomerAuthModal({
         body: JSON.stringify(bodyPayload)
       });
 
-      const resData = await loginRes.json();
       if (!loginRes.ok) {
-        throw new Error(resData.error || "Failed to establish user profile session.");
+        const errText = await loginRes.text().catch(() => "Unknown error");
+        let parsedErr = "Failed to establish user profile session.";
+        try {
+          const parsed = JSON.parse(errText);
+          parsedErr = parsed.error || parsedErr;
+        } catch {
+          parsedErr = `HTTP ${loginRes.status}: ${errText.slice(0, 100)}`;
+        }
+        throw new Error(parsedErr);
       }
 
+      const resData = await loginRes.json();
       onLogin(resData);
       setSuccessMessage("Dhanyavaad! Authenticated & Logged In successfully.");
       
@@ -263,11 +272,19 @@ export default function CustomerAuthModal({
         })
       });
 
-      const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to sync changes.");
+        const errText = await response.text().catch(() => "Unknown error");
+        let parsedErr = "Failed to sync changes.";
+        try {
+          const parsed = JSON.parse(errText);
+          parsedErr = parsed.error || parsedErr;
+        } catch {
+          parsedErr = `HTTP ${response.status}: ${errText.slice(0, 100)}`;
+        }
+        throw new Error(parsedErr);
       }
 
+      const data = await response.json();
       onLogin(data);
       setIsEditing(false);
       setSuccessMessage("Profile saved successfully");

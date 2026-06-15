@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { storage } from "./server-storage.ts";
 import { dollarErpService } from "./dollarErpService.js";
@@ -11,6 +12,21 @@ async function startServer() {
 
   // JSON body parser
   app.use(express.json());
+
+  // Request logger middleware
+  app.use((req, res, next) => {
+    const start = Date.now();
+    res.on("finish", () => {
+      const duration = Date.now() - start;
+      const logLine = `[${new Date().toISOString()}] ${req.method} ${req.url} - Status: ${res.statusCode} (${duration}ms)\n`;
+      try {
+        fs.appendFileSync(path.join(process.cwd(), "server-debug.log"), logLine, "utf-8");
+      } catch (e) {
+        console.error("Failed to write server-debug.log", e);
+      }
+    });
+    next();
+  });
 
   // 1. Health check
   app.get("/api/health", (req, res) => {
