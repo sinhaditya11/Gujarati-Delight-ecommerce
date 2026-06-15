@@ -1,0 +1,8 @@
+{
+  "name": "Gujarati Delights",
+  "description": "Premium online food and grocery store for local Gujarati delicacies with inventory syncing, secure checkout, and real-time status tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
