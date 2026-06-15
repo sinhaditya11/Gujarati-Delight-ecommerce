@@ -1,26 +1,39 @@
-import React, { useState } from "react";
-import { CartItem, Order } from "../types.ts";
+import React, { useState, useEffect } from "react";
+import { CartItem, Order, Customer } from "../types.ts";
 import RazorpayModal from "./RazorpayModal.tsx";
-import { ArrowLeft, Wallet, ShieldCheck, ShoppingCart, Loader2, AlertTriangle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Wallet, ShieldCheck, ShoppingCart, Loader2, AlertTriangle, AlertCircle, Sparkles, UserCheck } from "lucide-react";
 
 interface CheckoutViewProps {
   cartItems: CartItem[];
   onBackToCart: () => void;
   onOrderConfirmed: (orderNumber: string, orderId: string) => void;
   onClearCart: () => void;
+  currentUser: Customer | null;
+  onPromptLogin: () => void;
 }
 
 export default function CheckoutView({
   cartItems,
   onBackToCart,
   onOrderConfirmed,
-  onClearCart
+  onClearCart,
+  currentUser,
+  onPromptLogin
 }: CheckoutViewProps) {
   // Form fields
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [name, setName] = useState(currentUser?.name || "");
+  const [phone, setPhone] = useState(currentUser?.phone || "");
+  const [address, setAddress] = useState(currentUser?.delivery_address || "");
   const [notes, setNotes] = useState("");
+
+  // Sync form when currentUser changes (e.g. login)
+  useEffect(() => {
+    if (currentUser) {
+      setName(currentUser.name);
+      setPhone(currentUser.phone);
+      setAddress(currentUser.delivery_address || "");
+    }
+  }, [currentUser]);
 
   // States
   const [isLoading, setIsLoading] = useState(false);
@@ -159,6 +172,30 @@ export default function CheckoutView({
               We deliver local orders on the same day within Ahmedabad. Keep your phone active!
             </p>
           </div>
+
+          {currentUser ? (
+            <div className="bg-amber-500/10 border border-amber-500/20 px-4 py-3 rounded-2xl flex items-center gap-3 text-xs text-amber-900 select-none animate-fade-in">
+              <UserCheck className="w-5 h-5 text-amber-600 shrink-0" />
+              <div>
+                <span>Namaste, <strong>{currentUser.name}</strong>!</span>
+                <p className="text-[10px] text-amber-800/80 mt-0.5">We have automatically loaded your saved delivery details.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-amber-50/50 border border-amber-200/30 px-4 py-3 rounded-2xl flex items-center justify-between gap-4 text-xs text-stone-600 animate-fade-in">
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4.5 h-4.5 text-amber-500 shrink-0" />
+                <span>Save time next time! Log in to auto-fill your delivery details.</span>
+              </div>
+              <button
+                type="button"
+                onClick={onPromptLogin}
+                className="cursor-pointer text-amber-600 hover:text-amber-700 font-extrabold shrink-0 text-xs transition active:scale-95"
+              >
+                Log In
+              </button>
+            </div>
+          )}
 
           {/* Form Action */}
           <form id="checkout-form" onSubmit={handleSubmitCheckout} className="space-y-4">

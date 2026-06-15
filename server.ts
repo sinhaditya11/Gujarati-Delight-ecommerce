@@ -267,6 +267,96 @@ async function startServer() {
     }
   });
 
+  // 6. Customers API
+  app.post("/api/customers/register", async (req, res) => {
+    try {
+      const { phone, name, email, password, delivery_address } = req.body;
+      if (!phone || !name || !password) {
+        return res.status(400).json({ error: "Missing phone, name or password" });
+      }
+
+      // Check if phone already registered
+      const existing = await storage.getCustomerByPhone(phone);
+      if (existing) {
+        return res.status(400).json({ error: "Phone number is already registered" });
+      }
+
+      const customer = await storage.createCustomer({
+        phone,
+        name,
+        email: email || null,
+        password,
+        delivery_address: delivery_address || ""
+      });
+
+      // return customer without password
+      const { password: _, ...safeCustomer } = customer as any;
+      res.json(safeCustomer);
+    } catch (err: any) {
+      console.error("[API] Error in POST /api/customers/register:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/customers/login", async (req, res) => {
+    try {
+      const { phone, password } = req.body;
+      if (!phone || !password) {
+        return res.status(400).json({ error: "Missing phone or password" });
+      }
+
+      const customer = await storage.getCustomerByPhone(phone);
+      if (!customer) {
+        return res.status(401).json({ error: "No customer profile found with this phone number" });
+      }
+
+      if (customer.password !== password) {
+        return res.status(401).json({ error: "Incorrect password. Please try again." });
+      }
+
+      const { password: _, ...safeCustomer } = customer as any;
+      res.json(safeCustomer);
+    } catch (err: any) {
+      console.error("[API] Error in POST /api/customers/login:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/customers/:id", async (req, res) => {
+    try {
+      const customer = await storage.getCustomerById(req.params.id);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      const { password: _, ...safeCustomer } = customer as any;
+      res.json(safeCustomer);
+    } catch (err: any) {
+      console.error("[API] Error in GET /api/customers/:id:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/customers/:id", async (req, res) => {
+    try {
+      const { name, email, password, delivery_address } = req.body;
+      const updates: any = {};
+      if (name !== undefined) updates.name = name;
+      if (email !== undefined) updates.email = email;
+      if (password !== undefined) updates.password = password;
+      if (delivery_address !== undefined) updates.delivery_address = delivery_address;
+
+      const customer = await storage.updateCustomer(req.params.id, updates);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      const { password: _, ...safeCustomer } = customer as any;
+      res.json(safeCustomer);
+    } catch (err: any) {
+      console.error("[API] Error in PUT /api/customers/:id:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Vite middleware for development / production serving
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

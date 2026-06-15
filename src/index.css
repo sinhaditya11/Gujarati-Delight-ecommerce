@@ -40,6 +40,24 @@
   50% { opacity: 0.8; transform: scale(1.02); }
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes float-delayed {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
 .animate-pulse-slow {
   animation: pulse-slow 3s infinite ease-in-out;
+}
+
+.animate-float {
+  animation: float 4s infinite ease-in-out;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 4s infinite ease-in-out 2s;
 }

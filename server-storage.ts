@@ -42,6 +42,16 @@ export interface OrderItem {
   unit_price: number;
 }
 
+export interface Customer {
+  id: string;
+  phone: string;
+  name: string;
+  email: string | null;
+  password?: string;
+  delivery_address: string;
+  created_at: string;
+}
+
 const DB_FILE = path.join(process.cwd(), "database.json");
 
 // Default seed data
@@ -176,13 +186,18 @@ class StorageManager {
     this.ensureLocalDbExists();
     try {
       const content = fs.readFileSync(DB_FILE, "utf-8");
-      return JSON.parse(content);
+      const parsed = JSON.parse(content);
+      if (!parsed.customers) {
+        parsed.customers = [];
+      }
+      return parsed;
     } catch (e) {
       console.error("[Storage] Error reading database.json, resetting...", e);
       const initialDb = {
         products: SEED_PRODUCTS.map(p => ({ ...p, last_synced_at: null })),
         orders: [] as Order[],
         order_items: [] as OrderItem[],
+        customers: [] as any[],
         last_synced_at: null as string | null
       };
       fs.writeFileSync(DB_FILE, JSON.stringify(initialDb, null, 2), "utf-8");
@@ -637,6 +652,135 @@ class StorageManager {
       db.orders[idx].order_status = status;
       this.saveLocalData(db);
       return db.orders[idx];
+    }
+    return null;
+  }
+
+  // ---- Customers ----
+  async createCustomer(params: {
+    phone: string;
+    name: string;
+    email: string | null;
+    password?: string;
+    delivery_address?: string;
+  }): Promise<Customer> {
+    const customerId = crypto.randomUUID();
+    const timestamp = new Date().toISOString();
+    const passwordHash = params.password || "";
+
+    if (this.useSupabase) {
+      try {
+        const { data, error } = await this.supabaseClient
+          .from("customers")
+          .insert({
+            id: customerId,
+            phone: params.phone,
+            name: params.name,
+            email: params.email || null,
+            password: passwordHash,
+            delivery_address: params.delivery_address || "",
+            created_at: timestamp
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data as Customer;
+      } catch (err) {
+        console.error("[Storage] Supabase createCustomer failed, fallback to local", err);
+      }
+    }
+
+    const db = this.getLocalData();
+    db.customers = db.customers || [];
+    
+    // Check if phone already exists
+    const exists = db.customers.find((c: any) => c.phone === params.phone);
+    if (exists) {
+      throw new Error("Customer phone already exists");
+    }
+
+    const newCustomer: Customer = {
+      id: customerId,
+      phone: params.phone,
+      name: params.name,
+      email: params.email || null,
+      password: passwordHash,
+      delivery_address: params.delivery_address || "",
+      created_at: timestamp
+    };
+
+    db.customers.push(newCustomer);
+    this.saveLocalData(db);
+    return newCustomer;
+  }
+
+  async getCustomerByPhone(phone: string): Promise<Customer | null> {
+    if (this.useSupabase) {
+      try {
+        const { data, error } = await this.supabaseClient
+          .from("customers")
+          .select("*")
+          .eq("phone", phone)
+          .maybeSingle();
+
+        if (error) throw error;
+        return data as Customer | null;
+      } catch (err) {
+        console.error("[Storage] Supabase getCustomerByPhone failed, fallback to local", err);
+      }
+    }
+
+    const db = this.getLocalData();
+    db.customers = db.customers || [];
+    return db.customers.find((c: any) => c.phone === phone) || null;
+  }
+
+  async getCustomerById(id: string): Promise<Customer | null> {
+    if (this.useSupabase) {
+      try {
+        const { data, error } = await this.supabaseClient
+          .from("customers")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
+
+        if (error) throw error;
+        return data as Customer | null;
+      } catch (err) {
+        console.error("[Storage] Supabase getCustomerById failed, fallback to local", err);
+      }
+    }
+
+    const db = this.getLocalData();
+    db.customers = db.customers || [];
+    return db.customers.find((c: any) => c.id === id) || null;
+  }
+
+  async updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer | null> {
+    if (this.useSupabase) {
+      try {
+        const { data, error } = await this.supabaseClient
+          .from("customers")
+          .update(updates)
+          .eq("id", id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data as Customer;
+      } catch (err) {
+        console.error("[Storage] Supabase updateCustomer failed, fallback to local", err);
+      }
+    }
+
+    const db = this.getLocalData();
+    db.customers = db.customers || [];
+    const idx = db.customers.findIndex((c: any) => c.id === id);
+    if (idx !== -1) {
+      db.customers[idx] = { ...db.customers[idx], ...updates };
+      this.saveLocalData(db);
+      return db.customers[idx];
     }
     return null;
   }

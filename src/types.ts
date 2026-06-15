@@ -11,6 +11,15 @@ export interface Product {
   last_synced_at: string | null;
 }
 
+export interface Customer {
+  id: string;
+  phone: string;
+  name: string;
+  email: string | null;
+  delivery_address: string;
+  created_at: string;
+}
+
 export interface OrderItem {
   id: string;
   order_id: string;
