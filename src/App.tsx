@@ -6,9 +6,11 @@ import CartView from "./components/CartView.tsx";
 import CheckoutView from "./components/CheckoutView.tsx";
 import AdminPanel from "./components/AdminPanel.tsx";
 import CustomerAuthModal from "./components/CustomerAuthModal.tsx";
+import AddressModal from "./components/AddressModal.tsx";
 import { 
   ShoppingBag, Search, Sparkles, HelpCircle, 
-  CheckCircle, Truck, RefreshCw, Smartphone, KeyRound, Heart, User
+  CheckCircle, Truck, RefreshCw, Smartphone, KeyRound, Heart, User,
+  SlidersHorizontal
 } from "lucide-react";
 
 export default function App() {
@@ -57,11 +59,14 @@ export default function App() {
   const [sortBy, setSortBy] = useState("Recommended");
   const [dietary, setDietary] = useState("All");
   const [collectionType, setCollectionType] = useState("All");
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+  const activeFilterCount = (sortBy !== "Recommended" ? 1 : 0) + (dietary !== "All" ? 1 : 0) + (collectionType !== "All" ? 1 : 0);
 
   // Location State
   const [pincodeStr, setPincodeStr] = useState("380015");
+  const [addressLineStr, setAddressLineStr] = useState("Vastrapur, Ahmedabad");
   const [isPincodeModalOpen, setIsPincodeModalOpen] = useState(false);
-  const [pincodeInput, setPincodeInput] = useState(pincodeStr);
 
   // Toast Alerts State
   const [toast, setToast] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
@@ -317,13 +322,13 @@ export default function App() {
         {/* Delivery Location Bar */}
         <div className="bg-amber-100 border-b border-amber-200 py-2 px-4 sticky top-[65px] z-30 shadow-sm cursor-pointer hover:bg-amber-100/80 transition-colors" onClick={() => setIsPincodeModalOpen(true)}>
           <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">📍</span>
-              <span className="text-xs font-bold text-amber-900">
-                Deliver to: {pincodeStr}
+            <div className="flex items-center gap-2 truncate pr-4">
+              <span className="text-xl shrink-0">📍</span>
+              <span className="text-xs font-bold text-amber-900 truncate">
+                Deliver to <span className="font-ex">{pincodeStr}</span> • <span className="font-normal">{addressLineStr}</span>
               </span>
             </div>
-            <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30">
+            <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0">
               Change
             </span>
           </div>
@@ -393,44 +398,20 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Advanced Filter Row */}
-              <div className="flex overflow-x-auto scrollbar-none pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-nowrap lg:flex-wrap sm:justify-start lg:justify-center gap-3 text-xs snap-x">
-                <div className="flex flex-shrink-0 items-center gap-1.5 snap-start">
-                  <span className="font-semibold text-stone-500 hidden sm:inline mr-1">Sort:</span>
-                  {(["Recommended", "Price Low to High", "Price High to Low", "Rating"]).map(type => (
-                    <button 
-                      key={type} 
-                      onClick={() => setSortBy(type)} 
-                      className={`px-2.5 py-1.5 rounded-lg border font-medium transition-colors ${sortBy === type ? 'bg-amber-100 border-amber-300 text-amber-800 shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}
-                    >
-                      {type === "Price Low to High" ? "Price: Low-High" : type === "Price High to Low" ? "Price: High-Low" : type}
-                    </button>
-                  ))}
-                </div>
-                
-                <div className="flex flex-shrink-0 items-center gap-1.5 border-l border-stone-200 pl-3 snap-start relative">
-                  {(["All", "Jain", "Vegan"]).map(type => (
-                    <button 
-                      key={type} 
-                      onClick={() => setDietary(type)} 
-                      className={`px-2.5 py-1.5 rounded-lg border font-medium transition-colors ${dietary === type ? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}
-                    >
-                      {type === "All" ? "Any Diet" : type}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex flex-shrink-0 items-center gap-1.5 border-l border-stone-200 pl-3 snap-start">
-                  {(["All", "Best Sellers", "New Arrivals"]).map(type => (
-                    <button 
-                      key={type} 
-                      onClick={() => setCollectionType(type)} 
-                      className={`px-2.5 py-1.5 rounded-lg border font-medium transition-colors ${collectionType === type ? 'bg-orange-50 border-orange-300 text-orange-800 shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}
-                    >
-                      {type === "All" ? "All Types" : type}
-                    </button>
-                  ))}
-                </div>
+              {/* Advanced Filter Row (Now as modal trigger) */}
+              <div className="flex justify-center sm:justify-end -mt-1 sm:mt-0 pb-2 px-4 sm:px-0">
+                <button 
+                  onClick={() => setIsFilterModalOpen(true)}
+                  className="flex items-center gap-2 bg-white border border-stone-200 hover:bg-stone-50 text-stone-700 px-4 py-2 rounded-xl text-xs font-bold tracking-wide transition shadow-sm"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  <span>Filter & Sort</span>
+                  {activeFilterCount > 0 && (
+                    <span className="bg-amber-500 text-white w-5 h-5 flex items-center justify-center rounded-full text-[10px]">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -579,57 +560,97 @@ export default function App() {
         onLogout={() => setCurrentUser(null)}
       />
 
-      {/* Pincode Modal */}
-      {isPincodeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-slide-up border border-stone-200">
-            <div className="p-5 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
-              <h3 className="font-display font-semibold text-lg text-stone-900">Delivery Location</h3>
+      <AddressModal 
+        isOpen={isPincodeModalOpen}
+        onClose={() => setIsPincodeModalOpen(false)}
+        onAddressSelect={(zip, addr) => {
+          setPincodeStr(zip);
+          setAddressLineStr(addr);
+          setIsPincodeModalOpen(false);
+          showToast("Delivery location updated", "success");
+        }}
+      />
+
+      {/* Filter Modal */}
+      {isFilterModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-stone-900/60 backdrop-blur-sm animate-fade-in sm:p-4">
+          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-xl overflow-hidden animate-slide-up border border-stone-200 flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/50 sticky top-0">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-5 h-5 text-stone-700" />
+                <h3 className="font-display font-semibold text-lg text-stone-900">Filter & Sort</h3>
+              </div>
               <button 
-                onClick={() => setIsPincodeModalOpen(false)}
+                onClick={() => setIsFilterModalOpen(false)}
                 className="text-stone-400 hover:text-stone-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100 transition"
               >
                 ✕
               </button>
             </div>
-            <div className="p-5 space-y-4">
-              <p className="text-xs text-stone-500 font-medium">Enter your pincode to check if we deliver to your area.</p>
-              
-              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  maxLength={6}
-                  value={pincodeInput}
-                  onChange={e => setPincodeInput(e.target.value.replace(/\D/g, ''))}
-                  className="w-full h-11 px-3 border border-stone-200 rounded-xl focus:border-amber-400 focus:ring-1 focus:ring-amber-400 outline-none text-center font-mono font-bold tracking-widest text-lg"
-                  placeholder="000000"
-                />
+            
+            <div className="p-5 space-y-6 overflow-y-auto">
+              <div className="space-y-3">
+                <h4 className="font-semibold text-stone-900 text-sm">Sort By</h4>
+                <div className="flex flex-wrap gap-2 text-sm">
+                  {(["Recommended", "Price Low to High", "Price High to Low", "Rating"]).map(type => (
+                    <button 
+                      key={type} 
+                      onClick={() => setSortBy(type)} 
+                      className={`px-3 py-2 rounded-xl border font-medium transition-colors ${sortBy === type ? 'bg-amber-100 border-amber-300 text-amber-800 shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {pincodeInput.length === 6 && (
-                <div className={`p-3 rounded-lg text-xs font-semibold flex items-center gap-2 ${['380', '382'].some(prefix => pincodeInput.startsWith(prefix)) ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-                  {['380', '382'].some(prefix => pincodeInput.startsWith(prefix)) ? (
-                    <>✅ Delivery available in your area!</>
-                  ) : (
-                    <>❌ Currently not delivering here.</>
-                  )}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-stone-900 text-sm">Dietary Preference</h4>
+                <div className="flex flex-wrap gap-2 text-sm">
+                  {(["All", "Jain", "Vegan"]).map(type => (
+                    <button 
+                      key={type} 
+                      onClick={() => setDietary(type)} 
+                      className={`px-3 py-2 rounded-xl border font-medium transition-colors ${dietary === type ? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}
+                    >
+                      {type === "All" ? "Any Diet" : type}
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
 
-              <button 
+              <div className="space-y-3">
+                <h4 className="font-semibold text-stone-900 text-sm">Collection</h4>
+                <div className="flex flex-wrap gap-2 text-sm">
+                  {(["All", "Best Sellers", "New Arrivals"]).map(type => (
+                    <button 
+                      key={type} 
+                      onClick={() => setCollectionType(type)} 
+                      className={`px-3 py-2 rounded-xl border font-medium transition-colors ${collectionType === type ? 'bg-orange-50 border-orange-300 text-orange-800 shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}
+                    >
+                      {type === "All" ? "All Collections" : type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-stone-100 bg-white sticky bottom-0 flex gap-3">
+              <button
                 onClick={() => {
-                  if (pincodeInput.length === 6) {
-                    setPincodeStr(pincodeInput);
-                    setIsPincodeModalOpen(false);
-                    showToast("Delivery location updated", "success");
-                  } else {
-                    showToast("Please enter a valid 6-digit pincode", "error");
-                  }
+                  setSortBy("Recommended");
+                  setDietary("All");
+                  setCollectionType("All");
                 }}
-                disabled={pincodeInput.length !== 6}
-                className="w-full bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold h-11 rounded-xl shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold h-12 rounded-xl transition"
               >
-                Apply
+                Clear All
+              </button>
+              <button
+                onClick={() => setIsFilterModalOpen(false)}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold h-12 rounded-xl shadow-sm transition"
+              >
+                Show Results
               </button>
             </div>
           </div>

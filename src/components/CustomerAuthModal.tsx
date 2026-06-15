@@ -383,20 +383,6 @@ export default function CustomerAuthModal({
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-stone-500 block uppercase tracking-wider">Default Delivery Address *</label>
-                <div className="relative">
-                  <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-stone-400" />
-                  <textarea
-                    placeholder="Flat/House No, Apartment Name, Landmark, Ahmedabad, Gujarat"
-                    value={regAddress}
-                    rows={2}
-                    onChange={(e) => setRegAddress(e.target.value)}
-                    className="w-full p-4 pl-10 rounded-xl border border-stone-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm outline-none bg-stone-50/20 text-stone-900"
-                  />
-                </div>
-              </div>
-
               <button
                 type="submit"
                 disabled={isLoading}
