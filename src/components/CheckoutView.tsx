@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { CartItem, Order, Customer } from "../types.ts";
 import RazorpayModal from "./RazorpayModal.tsx";
 import { ArrowLeft, Wallet, ShieldCheck, ShoppingCart, Loader2, AlertTriangle, AlertCircle, Sparkles, UserCheck } from "lucide-react";
+import { db } from "../firebase.ts";
+import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
 
 interface CheckoutViewProps {
   cartItems: CartItem[];
@@ -64,29 +66,24 @@ export default function CheckoutView({
         unit_price: item.product.price
       }));
 
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          customer_name: name,
-          customer_phone: phone,
-          delivery_address: address,
-          order_notes: notes || null,
-          total_amount: grandTotal,
-          delivery_charge: deliveryCharge,
-          items: itemsPayload
-        })
-      });
+      const newOrder = {
+        customer_name: name,
+        customer_phone: phone,
+        delivery_address: address,
+        order_notes: notes || null,
+        total_amount: grandTotal,
+        delivery_charge: deliveryCharge,
+        items: itemsPayload,
+        payment_status: "pending",
+        order_status: "pending",
+        order_number: "GD-" + Math.floor(Math.random() * 900000 + 100000),
+        created_at: new Date().toISOString()
+      };
+      const ordersRef = collection(db, "orders");
+      const docRef = await addDoc(ordersRef, newOrder);
 
-      if (!response.ok) {
-        throw new Error("Failed to initialize database order");
-      }
-
-      const createdOrder: Order = await response.json();
-      setActiveOrderId(createdOrder.id);
-      setActiveOrderNum(createdOrder.order_number);
+      setActiveOrderId(docRef.id);
+      setActiveOrderNum(newOrder.order_number);
       setIsRazorpayOpen(true);
 
     } catch (err: any) {
@@ -102,19 +99,11 @@ export default function CheckoutView({
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/orders/${activeOrderId}/payment-success`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          razorpay_payment_id: paymentId
-        })
+      const docRef = doc(db, "orders", activeOrderId);
+      await updateDoc(docRef, {
+        payment_status: "paid",
+        razorpay_payment_id: paymentId
       });
-
-      if (!response.ok) {
-        throw new Error("Server failed to log payment success");
-      }
 
       onClearCart();
       setIsRazorpayOpen(false);
@@ -134,11 +123,9 @@ export default function CheckoutView({
     setIsRazorpayOpen(false);
 
     try {
-      await fetch(`/api/orders/${activeOrderId}/payment-failed`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        }
+      const docRef = doc(db, "orders", activeOrderId);
+      await updateDoc(docRef, {
+        payment_status: "failed"
       });
       setPaymentError("Your payment was declined or cancelled. Please verify your payment details and hit 'Retry Pay Now'.");
     } catch (err: any) {

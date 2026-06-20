@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Customer, Order } from "../types.ts";
-import { auth } from "../firebase.ts";
+import { auth, db } from "../firebase.ts";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { collection, query, where, getDocs, doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { 
   User, Phone, MapPin, Mail, LogOut, CheckCircle, 
   Lock, ClipboardList, ShieldAlert, X, Edit3, Loader2, Save, Send, Keyboard
@@ -85,12 +86,13 @@ export default function CustomerAuthModal({
   const fetchCustomerOrders = async (phone: string) => {
     setIsLoadingOrders(true);
     try {
-      const res = await fetch("/api/orders");
-      if (res.ok) {
-        const data: Order[] = await res.json();
-        const filtered = data.filter(o => o.customer_phone.replace(/\s+/g, "") === phone.replace(/\s+/g, ""));
-        setCustomerOrders(filtered);
-      }
+      const ordersRef = collection(db, "orders");
+      const q = query(ordersRef, where("customer_phone", "==", phone));
+      const snapshot = await getDocs(q);
+      const data: Order[] = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+      // fallback filter: some old orders might have +91 prefix
+      const filtered = data.filter(o => o.customer_phone.replace(/\D/g,"").slice(-10) === phone.replace(/\D/g,"").slice(-10));
+      setCustomerOrders(filtered);
     } catch (e) {
       console.error("Error fetching orders:", e);
     } finally {
@@ -125,20 +127,19 @@ export default function CustomerAuthModal({
 
     try {
       // 1. Check if user exists on our backend
-      const checkRes = await fetch(`/api/customers/check-phone?phone=${encodeURIComponent(formattedPhone)}`);
-      if (!checkRes.ok) {
-        const errText = await checkRes.text().catch(() => "Unknown error");
-        throw new Error(`Failed to contact CRM server to verify number. Status: ${checkRes.status}, Details: ${errText.slice(0, 150)}`);
-      }
-      const checkData = await checkRes.json();
+      const rawPhone = formattedPhone.replace(/\D/g, "").slice(-10);
+      const customersRef = collection(db, "customers");
+      const q = query(customersRef, where("phone", "==", rawPhone));
+      const querySnapshot = await getDocs(q);
+      const exists = !querySnapshot.empty;
 
-      if (isRegister && checkData.exists) {
+      if (isRegister && exists) {
         setErrorMessage("This phone number is already registered. Please go to the Log In tab.");
         setIsLoading(false);
         return;
       }
 
-      if (!isRegister && !checkData.exists) {
+      if (!isRegister && !exists) {
         setErrorMessage("No profile found with this phone number. Please switch to the Create Account tab.");
         setIsLoading(false);
         return;
@@ -208,35 +209,33 @@ export default function CustomerAuthModal({
       const credentials = await confirmationResult.confirm(code);
       const firebasePhone = credentials.user.phoneNumber;
 
-      // 2. Send verified credential to CRM API to login or register
-      const bodyPayload: any = {
-        phone: firebasePhone
-      };
-
-      if (activeTab === "register") {
-        bodyPayload.name = regName.trim();
-        bodyPayload.email = regEmail.trim() || null;
-      }
-
-      const loginRes = await fetch("/api/customers/otp-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyPayload)
-      });
-
-      if (!loginRes.ok) {
-        const errText = await loginRes.text().catch(() => "Unknown error");
-        let parsedErr = "Failed to establish user profile session.";
-        try {
-          const parsed = JSON.parse(errText);
-          parsedErr = parsed.error || parsedErr;
-        } catch {
-          parsedErr = `HTTP ${loginRes.status}: ${errText.slice(0, 100)}`;
+      // 2. Fetch or create user in Firestore
+      const rawFirebasePhone = firebasePhone.replace(/\D/g, "").slice(-10);
+      const customersRef = collection(db, "customers");
+      const q = query(customersRef, where("phone", "==", rawFirebasePhone));
+      const querySnapshot = await getDocs(q);
+      
+      let resData: any = {};
+      if (querySnapshot.empty) {
+        if (activeTab === "register") {
+          // Create new user
+          const docRef = doc(customersRef);
+          resData = {
+            id: docRef.id,
+            name: regName.trim(),
+            phone: rawFirebasePhone,
+            email: regEmail.trim() || null,
+            delivery_address: "",
+            created_at: new Date().toISOString()
+          };
+          await setDoc(docRef, resData);
+        } else {
+          throw new Error("No profile found for this verified number. Please register.");
         }
-        throw new Error(parsedErr);
+      } else {
+        resData = querySnapshot.docs[0].data();
+        resData.id = querySnapshot.docs[0].id;
       }
-
-      const resData = await loginRes.json();
       onLogin(resData);
       setSuccessMessage("Dhanyavaad! Authenticated & Logged In successfully.");
       
@@ -262,29 +261,17 @@ export default function CustomerAuthModal({
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/customers/${currentUser.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editName,
-          email: editEmail || null,
-          delivery_address: editAddress
-        })
-      });
+      const docRef = doc(db, "customers", currentUser.id);
+      const updates = {
+        name: editName,
+        email: editEmail || null,
+        delivery_address: editAddress
+      };
+      await updateDoc(docRef, updates);
+      
+      const updatedDoc = await getDoc(docRef);
+      const data = { id: updatedDoc.id, ...updatedDoc.data() };
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => "Unknown error");
-        let parsedErr = "Failed to sync changes.";
-        try {
-          const parsed = JSON.parse(errText);
-          parsedErr = parsed.error || parsedErr;
-        } catch {
-          parsedErr = `HTTP ${response.status}: ${errText.slice(0, 100)}`;
-        }
-        throw new Error(parsedErr);
-      }
-
-      const data = await response.json();
       onLogin(data);
       setIsEditing(false);
       setSuccessMessage("Profile saved successfully");

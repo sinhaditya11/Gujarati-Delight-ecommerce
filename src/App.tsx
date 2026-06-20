@@ -7,6 +7,8 @@ import CheckoutView from "./components/CheckoutView.tsx";
 import AdminPanel from "./components/AdminPanel.tsx";
 import CustomerAuthModal from "./components/CustomerAuthModal.tsx";
 import AddressModal from "./components/AddressModal.tsx";
+import { db } from "./firebase.ts";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { 
   ShoppingBag, Search, Sparkles, HelpCircle, 
   CheckCircle, Truck, RefreshCw, Smartphone, KeyRound, Heart, User,
@@ -84,13 +86,18 @@ export default function App() {
   const fetchProducts = async () => {
     setIsProductsLoading(true);
     try {
-      const response = await fetch("/api/products");
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(data);
-      } else {
-        showToast("Failed to fetch fresh products from database.", "error");
+      const q = query(collection(db, "products"));
+      const snapshot = await getDocs(q);
+      let data: Product[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+      
+      // Fallback data if Firestore is empty initially
+      if (data.length === 0) {
+        data = [
+          { id: "erp-khakhra-001", name: "Premium Jeera Khakhra", category: "Snacks", price: 65, stock: 150, description: "Crispy, hand-roasted wheat crisps with roasted cumin. A classic everyday snack.", image_url: null, is_active: true, erp_id: null, last_synced_at: null },
+          { id: "erp-sev-003", name: "Ratlami Sev", category: "Snacks", price: 85, stock: 100, description: "Spicy, thick chickpea flour noodles seasoned with cloves and black pepper.", image_url: null, is_active: true, erp_id: null, last_synced_at: null }
+        ];
       }
+      setProducts(data);
     } catch (e) {
       console.error(e);
       showToast("Network error reading product database.", "error");
