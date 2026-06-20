@@ -7,6 +7,7 @@ interface CartViewProps {
   cartItems: CartItem[];
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => void;
+  onClearCart: () => void;
   onProceedToCheckout: () => void;
   onContinueShopping: () => void;
 }
@@ -15,6 +16,7 @@ export default function CartView({
   cartItems,
   onUpdateQuantity,
   onRemoveItem,
+  onClearCart,
   onProceedToCheckout,
   onContinueShopping
 }: CartViewProps) {
@@ -52,9 +54,18 @@ export default function CartView({
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 animate-fade-in">
-      <h1 className="font-display font-bold text-2xl text-stone-900 tracking-tight mb-6">
-        Shopping Cart ({totalQty} item{totalQty > 1 ? "s" : ""})
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="font-display font-bold text-2xl text-stone-900 tracking-tight">
+          Shopping Cart ({totalQty} item{totalQty > 1 ? "s" : ""})
+        </h1>
+        <button
+          onClick={onClearCart}
+          className="text-stone-500 hover:text-rose-500 text-sm font-medium transition cursor-pointer flex items-center gap-1.5"
+        >
+          <Trash2 className="w-4 h-4" />
+          Clear Cart
+        </button>
+      </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Cart items list - left 2 columns */}

@@ -164,6 +164,7 @@ export default function App() {
 
   const handleClearCart = () => {
     setCartItems([]);
+    showToast("Shopping cart cleared.", "info");
   };
 
   const handleOrderConfirmed = (orderNumber: string, orderId: string) => {
@@ -465,6 +466,7 @@ export default function App() {
             cartItems={cartItems}
             onUpdateQuantity={handleUpdateCartQuantity}
             onRemoveItem={handleRemoveCartItem}
+            onClearCart={handleClearCart}
             onProceedToCheckout={() => setActiveView("checkout")}
             onContinueShopping={() => setActiveView("shop")}
           />
